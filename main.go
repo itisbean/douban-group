@@ -2,43 +2,45 @@
 package main
 
 import (
+	"strconv"
 	"log"
-	"strings"
+	//"strings"
 
 	"github.com/PuerkitoBio/goquery"
 
-	"github.com/go-crawler/douban-movie/model"
-	"github.com/go-crawler/douban-movie/parse"
+	"go-crawler/douban-group/model"
+	"go-crawler/douban-group/parse"
 )
 
+// 抓取网站：豆瓣🔥小组
 var (
-	BaseUrl = "https://movie.douban.com/top250"
+	BaseURL = "https://www.douban.com/group/639264/discussion"
 )
 
-// 新增数据
-func Add(movies []parse.DoubanMovie) {
-	for index, movie := range movies {
-		if err := model.DB.Create(&movie).Error; err != nil {
-			log.Printf("db.Create index: %s, err : %v", index, err)
+// Add 新增数据
+func Add(topics []parse.DoubanGroupDbhyz) {
+	for index, topic := range topics {
+		if err := model.DB.Create(&topic).Error; err != nil {
+			log.Printf("db.Create index: %s, err : %v", strconv.Itoa(index), err)
 		}
 	}
 }
 
-// 开始爬取
+// Start 开始爬取
 func Start() {
-	var movies []parse.DoubanMovie
+	var topics []parse.DoubanGroupDbhyz
 
-	pages := parse.GetPages(BaseUrl)
+	pages := parse.GetPages(BaseURL)
 	for _, page := range pages {
-		doc, err := goquery.NewDocument(strings.Join([]string{BaseUrl, page.Url}, ""))
+		doc, err := goquery.NewDocument(page.URL)
 		if err != nil {
 			log.Println(err)
 		}
 
-		movies = append(movies, parse.ParseMovies(doc)...)
+		topics = append(topics, parse.Topics(doc)...)
 	}
 
-	Add(movies)
+	Add(topics)
 }
 
 func main() {

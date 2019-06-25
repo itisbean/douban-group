@@ -5,15 +5,16 @@ import (
 	"log"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/mysql" // mysqk
 )
 
+// mysql config
 var (
 	DB *gorm.DB
 
-	username string = "root"
-	password string = "rootroot"
-	dbName   string = "spiders"
+	username = "root"
+	password = "dony123."
+	dbName   = "spiders"
 )
 
 func init() {
