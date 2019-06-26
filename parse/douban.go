@@ -34,22 +34,24 @@ type Page struct {
 }
 
 // GetPages 获取分页
-func GetPages(url string) []Page {
-	doc, err := goquery.NewDocument(url)
-	if err != nil {
-		log.Fatal(err)
-	}
+func GetPages(url string, total int) []Page {
+	if total == 0 {
+		doc, err := goquery.NewDocument(url)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	return Pages(doc, url)
+		totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
+		total, _ = strconv.Atoi(totalstr)
+	} 
+
+	return Pages(url, total)
 }
 
 // Pages 分析分页
-func Pages(doc *goquery.Document, url string) (pages []Page) {
+func Pages(url string, total int) (pages []Page) {
 	size := 25
-
-	totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
-	total, _ := strconv.Atoi(totalstr)
-
+	
 	for i := 1; i <= total; i++ {
 		pages = append(pages, Page{
 			Page: i,
@@ -103,7 +105,7 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 
 			item = Detail(item)
 
-			log.Printf("i: %d, item: %v", i, item)
+			//log.Printf("i: %d, item: %v", i, item)
 			items = append(items, item)
 		}
 	})

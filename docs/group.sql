@@ -1,7 +1,7 @@
 CREATE TABLE `sp_douban_group_dbhyz` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `topic_id` int(10) DEFAULT '0' COMMENT '标题ID',
-  `topic` varchar(200) DEFAULT '' COMMENT '标题',
+  `topic` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '标题',
   `author_id` int(10) DEFAULT '0' COMMENT '发帖人ID',
   `author` varchar(20) DEFAULT '' COMMENT '发帖人',
   `create_time` datetime COMMENT '创建时间',
@@ -11,6 +11,9 @@ CREATE TABLE `sp_douban_group_dbhyz` (
   `collect` int(10) unsigned DEFAULT '0' COMMENT '收藏数量',
   `sharing` int(10) unsigned DEFAULT '0' COMMENT '转发',
 	`url` varchar(120) DEFAULT '' COMMENT '链接',
-  `content` text COMMENT '内容',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='豆瓣火研组';
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '内容',
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `IX_topic_id`(`topic_id`),
+  INDEX `IX_create_time`(`create_time`),
+  INDEX `IX_new_time`(`new_reply_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT='豆瓣火研组';

@@ -1,4 +1,4 @@
-// 爬取豆瓣电影 TOP250
+// 爬取豆瓣小组
 package main
 
 import (
@@ -21,7 +21,19 @@ var (
 func Start() {
 	var topics []parse.DoubanGroupDbhyz
 
-	pages := parse.GetPages(BaseURL)
+	lastUpdate, err := model.GetLastTime()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var pages []parse.Page
+	if lastUpdate != "" {
+		pages = parse.GetPages(BaseURL, 2)
+	} else {
+		pages = parse.GetPages(BaseURL, 0)
+	}
+
 	for _, page := range pages {
 		doc, err := goquery.NewDocument(page.URL)
 		if err != nil {
