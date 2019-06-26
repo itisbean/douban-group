@@ -2,6 +2,8 @@ package parse
 
 import (
 	"log"
+	"time"
+
 	//"regexp"
 	"strconv"
 	"strings"
@@ -20,7 +22,8 @@ type DoubanGroupDbhyz struct {
 	Reply        int
 	Liked        int
 	Collect      int
-	Forward      int
+	Sharing      int
+	URL          string
 	Content      string
 }
 
@@ -42,18 +45,18 @@ func GetPages(url string) []Page {
 
 // Pages 分析分页
 func Pages(doc *goquery.Document, url string) (pages []Page) {
-	pages = append(pages, Page{Page: 1, URL: url})
-	doc.Find("#content > div > div.article > div.paginator > a").Each(func(i int, s *goquery.Selection) {
-		if i < 2 {
-			page, _ := strconv.Atoi(s.Text())
-			url, _ := s.Attr("href")
+	size := 25
 
-			pages = append(pages, Page{
-				Page: page,
-				URL:  url,
-			})
-		}
-	})
+	totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
+	total, _ := strconv.Atoi(totalstr)
+
+	for i := 1; i <= total; i++ {
+		pages = append(pages, Page{
+			Page: i,
+			URL:  url + "?start=" + strconv.Itoa((i-1)*size),
+		})
+	}
+
 	return pages
 }
 
@@ -61,14 +64,16 @@ func Pages(doc *goquery.Document, url string) (pages []Page) {
 func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 	doc.Find("#content > div > div.article > div > table > tbody > tr").Each(func(i int, s *goquery.Selection) {
 		if i > 0 {
-			topicstr, _ := s.Find("td a").Eq(0).Attr("href")
-			topicstr = strings.TrimLeft(topicstr, "/topic/")
+			topicurl, _ := s.Find("td a").Eq(0).Attr("href")
+			topicstr := strings.Split(topicurl, "/topic/")[1]
+			topicstr = strings.Replace(topicstr, "/", "", -1)
 			topicid, _ := strconv.Atoi(topicstr)
 
 			topic, _ := s.Find("td a").Eq(0).Attr("title")
 
-			authorstr, _ := s.Find("td a").Eq(1).Attr("href")
-			authorstr = strings.TrimLeft(topicstr, "/people/")
+			authorurl, _ := s.Find("td a").Eq(1).Attr("href")
+			authorstr := strings.Split(authorurl, "/people/")[1]
+			authorstr = strings.Replace(authorstr, "/", "", -1)
 			authorid, _ := strconv.Atoi(authorstr)
 
 			author := s.Find("td a").Eq(1).Text()
@@ -76,37 +81,27 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 			reply, _ := strconv.Atoi(s.Find("td").Eq(2).Text())
 
 			newreplytime := s.Find("td").Eq(3).Text()
-
-			//other = strings.TrimLeft(other, "  / ")
-
-			// desc := strings.TrimSpace(s.Find(".bd p").Eq(0).Text())
-			// DescInfo := strings.Split(desc, "\n")
-			// desc = DescInfo[0]
-
-			// movieDesc := strings.Split(DescInfo[1], "/")
-			// year := strings.TrimSpace(movieDesc[0])
-			// area := strings.TrimSpace(movieDesc[1])
-			// tag := strings.TrimSpace(movieDesc[2])
-
-			// star := s.Find(".bd .star .rating_num").Text()
-
-			// comment := strings.TrimSpace(s.Find(".bd .star span").Eq(3).Text())
-			// compile := regexp.MustCompile("[0-9]")
-			// comment = strings.Join(compile.FindAllString(comment, -1), "")
+			if strings.Count(newreplytime, "-") == 1 {
+				year := strconv.Itoa(time.Now().Year())
+				newreplytime = strings.Join([]string{year, newreplytime}, "-")
+			}
 
 			item := DoubanGroupDbhyz{
-				TopicID: 	  topicid,
+				TopicID:      topicid,
 				Topic:        topic,
-				AuthorID: 	  authorid,
-				Author: 	  author,
+				AuthorID:     authorid,
+				Author:       author,
 				CreateTime:   "",
 				NewReplyTime: newreplytime,
 				Reply:        reply,
-				Liked: 		  0,
-				Collect: 	  0,
-				Forward: 	  0,
-				Content: 	  "",
+				Liked:        0,
+				Collect:      0,
+				Sharing:      0,
+				URL:          topicurl,
+				Content:      "",
 			}
+
+			item = Detail(item)
 
 			log.Printf("i: %d, item: %v", i, item)
 			items = append(items, item)
@@ -114,4 +109,31 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 	})
 
 	return items
+}
+
+// Detail 详情页
+func Detail(item DoubanGroupDbhyz) DoubanGroupDbhyz {
+	//item.URL = "https://www.douban.com/group/topic/143489532/"
+	doc, err := goquery.NewDocument(item.URL)
+	if err != nil {
+		log.Println(err)
+	}
+
+	topicContent := doc.Find("#content > div > div.article > div.topic-content")
+
+	createtime := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
+	content := strings.TrimSpace(topicContent.Find("div.topic-doc > div#link-report > div.topic-content").Text())
+
+	// TODO 点赞、收藏、转发 需要登录才能获取
+	// liked, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-react > a > span.react-num").Text())
+	// collect, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-collect > a > span.react-num").Text())
+	// sharing, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.sharing > div > div > div > span > a > span.rec-num").Text())
+
+	item.CreateTime = createtime
+	// item.Liked = liked
+	// item.Collect = collect
+	// item.Sharing = sharing
+	item.Content = content
+
+	return item
 }

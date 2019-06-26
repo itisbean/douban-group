@@ -9,7 +9,8 @@ CREATE TABLE `sp_douban_group_dbhyz` (
   `reply` int(10) unsigned DEFAULT '0' COMMENT '回复数',
   `liked` int(10) unsigned DEFAULT '0' COMMENT '点赞数量',
   `collect` int(10) unsigned DEFAULT '0' COMMENT '收藏数量',
-  `forward` int(10) unsigned DEFAULT '0' COMMENT '转发',
-  `content` text COMMENT '内容'
+  `sharing` int(10) unsigned DEFAULT '0' COMMENT '转发',
+	`url` varchar(120) DEFAULT '' COMMENT '链接',
+  `content` text COMMENT '内容',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='豆瓣火研组';

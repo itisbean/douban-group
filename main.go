@@ -2,8 +2,8 @@
 package main
 
 import (
-	"strconv"
 	"log"
+
 	//"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -16,15 +16,6 @@ import (
 var (
 	BaseURL = "https://www.douban.com/group/639264/discussion"
 )
-
-// Add 新增数据
-func Add(topics []parse.DoubanGroupDbhyz) {
-	for index, topic := range topics {
-		if err := model.DB.Create(&topic).Error; err != nil {
-			log.Printf("db.Create index: %s, err : %v", strconv.Itoa(index), err)
-		}
-	}
-}
 
 // Start 开始爬取
 func Start() {
@@ -40,7 +31,7 @@ func Start() {
 		topics = append(topics, parse.Topics(doc)...)
 	}
 
-	Add(topics)
+	model.Save(topics)
 }
 
 func main() {
