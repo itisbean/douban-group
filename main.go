@@ -3,6 +3,7 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	//"strings"
 
@@ -15,11 +16,13 @@ import (
 // 抓取网站：豆瓣🔥小组
 var (
 	BaseURL = "https://www.douban.com/group/639264/discussion"
+
+	wg sync.WaitGroup
 )
 
 // Start 开始爬取
 func Start() {
-	var topics []parse.DoubanGroupDbhyz
+	//var topics []parse.DoubanGroupDbhyz
 
 	lastUpdate, err := model.GetLastTime()
 	if err != nil {
@@ -35,15 +38,20 @@ func Start() {
 	}
 
 	for _, page := range pages {
-		doc, err := goquery.NewDocument(page.URL)
-		if err != nil {
-			log.Println(err)
-		}
+		wg.Add(1)
+		go func(page parse.Page) {
+			defer wg.Done()
 
-		topics = append(topics, parse.Topics(doc)...)
+			doc, err := goquery.NewDocument(page.URL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			model.Save(parse.Topics(doc))
+		}(page)
+
+		wg.Wait()
 	}
-
-	model.Save(topics)
 }
 
 func main() {
