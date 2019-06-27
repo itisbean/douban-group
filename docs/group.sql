@@ -12,6 +12,7 @@ CREATE TABLE `sp_douban_group_dbhyz` (
   `sharing` int(10) unsigned DEFAULT '0' COMMENT '转发',
 	`url` varchar(120) DEFAULT '' COMMENT '链接',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '内容',
+  `version` int(10) unsigned DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE INDEX `IX_topic_id`(`topic_id`),
   INDEX `IX_create_time`(`create_time`),

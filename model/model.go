@@ -45,14 +45,14 @@ func Add(topics []parse.DoubanGroupDbhyz) {
 	}
 }
 
-// GetLastTime 获取最新时间
-func GetLastTime() (string, error) {
+// GetVersion 获取上一次的页数
+func GetVersion() (int, error) {
 	var item parse.DoubanGroupDbhyz
-	err := DB.Select("new_reply_time").Order("new_reply_time desc").First(&item).Error
+	err := DB.Select("version").Order("version desc").First(&item).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return "", err
+		return 0, err
 	}
-	return item.NewReplyTime, nil
+	return item.Version, nil
 }
 
 // Save 新增或更新

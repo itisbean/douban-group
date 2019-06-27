@@ -24,33 +24,35 @@ var (
 func Start() {
 	//var topics []parse.DoubanGroupDbhyz
 
-	lastUpdate, err := model.GetLastTime()
+	version, err := model.GetVersion()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var pages []parse.Page
-	if lastUpdate != "" {
-		pages = parse.GetPages(BaseURL, 2)
-	} else {
-		pages = parse.GetPages(BaseURL, 0)
-	}
+	total := parse.GetTotal(BaseURL, version)
 
-	for _, page := range pages {
-		wg.Add(1)
-		go func(page parse.Page) {
-			defer wg.Done()
+	var pages [][]parse.Page
+	pages = parse.Pages(BaseURL, (total - version + 1))
 
-			doc, err := goquery.NewDocument(page.URL)
-			if err != nil {
-				log.Println(err)
-			}
+	for _, pageList := range pages {
+		//获取新的Ip抓取页面；延时
 
-			model.Save(parse.Topics(doc))
-		}(page)
+		for _, page := range pageList {
+			wg.Add(1)
+			go func(page parse.Page) {
+				defer wg.Done()
 
-		wg.Wait()
+				doc, err := goquery.NewDocument(page.URL)
+				if err != nil {
+					log.Println(err)
+				}
+
+				model.Save(parse.Topics(doc))
+			}(page)
+
+			wg.Wait()
+		}
 	}
 }
 

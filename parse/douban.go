@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"math"
 	"log"
 	"time"
 
@@ -25,6 +26,7 @@ type DoubanGroupDbhyz struct {
 	Sharing      int
 	URL          string
 	Content      string
+	Version      int
 }
 
 // Page 分页
@@ -33,29 +35,36 @@ type Page struct {
 	URL  string
 }
 
-// GetPages 获取分页
-func GetPages(url string, total int) []Page {
-	if total == 0 {
-		doc, err := goquery.NewDocument(url)
-		if err != nil {
-			log.Fatal(err)
-		}
+// GetTotal 获取总页数
+func GetTotal(url string, version int) int {
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
-		total, _ = strconv.Atoi(totalstr)
-	} 
+	totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
+	total, _ := strconv.Atoi(totalstr)
 
-	return Pages(url, total)
+	return total
 }
 
 // Pages 分析分页
-func Pages(url string, total int) (pages []Page) {
-	size := 25
-	
-	for i := 1; i <= total; i++ {
-		pages = append(pages, Page{
+func Pages(url string, total int) (pages [][]Page) {
+	size := 25 //每页25条，每25页一组
+
+	lastKey := 0
+	var pageList []Page
+
+	for i := 0; i < total; i++ {
+		key := int(math.Floor(float64(i/size)))
+		if key != lastKey {
+			pages = append(pages, pageList)
+			pageList = append(pageList[:0], pageList[:size]...)
+			lastKey = key
+		}
+		pageList = append(pageList, Page{
 			Page: i,
-			URL:  url + "?start=" + strconv.Itoa((i-1)*size),
+			URL:  url + "?start=" + strconv.Itoa(i*size),
 		})
 	}
 
@@ -103,7 +112,7 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 				Content:      "",
 			}
 
-			item = Detail(item)
+			//item = Detail(item)
 
 			//log.Printf("i: %d, item: %v", i, item)
 			items = append(items, item)
