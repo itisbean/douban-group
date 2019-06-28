@@ -1,8 +1,8 @@
 package parse
 
 import (
-	"math"
 	"log"
+	"math"
 	"time"
 
 	//"regexp"
@@ -56,24 +56,26 @@ func Pages(url string, total int) (pages [][]Page) {
 	var pageList []Page
 
 	for i := 0; i < total; i++ {
-		key := int(math.Floor(float64(i/size)))
+		key := int(math.Floor(float64(i / size)))
 		if key != lastKey {
 			pages = append(pages, pageList)
-			pageList = append(pageList[:0], pageList[:size]...)
+			pageList = append([]Page{})
 			lastKey = key
 		}
 		pageList = append(pageList, Page{
-			Page: i,
-			URL:  url + "?start=" + strconv.Itoa(i*size),
+			Page: i + 1,
+			URL:  url + "?start=" + strconv.Itoa((total-i-1)*size),
 		})
 	}
+
+	pages = append(pages, pageList)
 
 	return pages
 }
 
 // Topics 分析话题
-func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
-	doc.Find("#content > div > div.article > div > table > tbody > tr").Each(func(i int, s *goquery.Selection) {
+func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
+	doc.Find("#content > div > div.article > div > table.olt > tbody > tr").Each(func(i int, s *goquery.Selection) {
 		if i > 0 {
 			topicurl, _ := s.Find("td a").Eq(0).Attr("href")
 			topicstr := strings.Split(topicurl, "/topic/")[1]
@@ -102,7 +104,7 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 				Topic:        topic,
 				AuthorID:     authorid,
 				Author:       author,
-				CreateTime:   "",
+				CreateTime:   newreplytime,
 				NewReplyTime: newreplytime,
 				Reply:        reply,
 				Liked:        0,
@@ -110,11 +112,10 @@ func Topics(doc *goquery.Document) (items []DoubanGroupDbhyz) {
 				Sharing:      0,
 				URL:          topicurl,
 				Content:      "",
+				Version:      version,
 			}
 
-			//item = Detail(item)
-
-			//log.Printf("i: %d, item: %v", i, item)
+			log.Printf("i: %d, item: %v", i, item)
 			items = append(items, item)
 		}
 	})

@@ -15,6 +15,6 @@ CREATE TABLE `sp_douban_group_dbhyz` (
   `version` int(10) unsigned DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE INDEX `IX_topic_id`(`topic_id`),
-  INDEX `IX_create_time`(`create_time`),
+  INDEX `version`(`version`),
   INDEX `IX_new_time`(`new_reply_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT='豆瓣火研组';
