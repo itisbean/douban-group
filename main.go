@@ -24,44 +24,58 @@ var (
 
 // Start1 分页抓取帖子（ID、标题、作者、最后回复时间等）
 func Start1() {
-	version := model.GetVersion()
 
-	newVersion := parse.GetTotal(BaseURL, version)
-	newVersion = 1
+	newVersion := parse.GetTotal(BaseURL)
 
+	version := model.GetVersion(newVersion)
+	
 	var pages [][]parse.Page
-	pages = parse.Pages(BaseURL, (newVersion - version + 1))
+	pages = parse.PagesAll(BaseURL, newVersion, version)
 
 	for _, pageList := range pages {
 		//1、获取新的Ip和user-agent抓取页面；延时防封禁；
-		proxyAddr := agent.GetProxy() //代理IP，需要自己更换
-		userAgent := agent.GetAgent()
+		proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
+		if proxyAddr == "" {
+			log.Println("无法获取代理Ip，请稍后重试")
+			break
+		}
 
 		//2、开始抓取每页话题
-		for index, page := range pageList {
+		for _, page := range pageList {
 			wg.Add(1)
 			go func(page parse.Page) {
 				defer wg.Done()
 
 				resp := agent.GetHTML(page.URL, userAgent, proxyAddr)
+				if resp == nil {
+					log.Println("Get Html Error,Please Retry")
+					return
+				}
+
+				log.Printf("http code:%d", resp.StatusCode)
+
 				if resp.StatusCode == 403 {
 					log.Println("403 Forbidden,Please Retry")
 					return
 				}
 				doc, err := goquery.NewDocumentFromResponse(resp)
+				defer resp.Body.Close()
+
 				if err != nil {
 					log.Println(err)
 					return
 				}
 
-				model.Save(parse.Topics(doc, index))
+				curVersion := newVersion - page.Page + 1
+				items := parse.Topics(doc, curVersion)
+				log.Printf("items:%v", items)
+				model.Save(items)
 			}(page)
-
-			wg.Wait()
 		}
 
 		time.Sleep(time.Second * 5)
 	}
+	wg.Wait()
 }
 
 // Start2 从数据库获取未抓内容的话题，进入详情页抓取内容

@@ -18,14 +18,14 @@ type DoubanGroupDbhyz struct {
 	Topic        string
 	AuthorID     int
 	Author       string
-	CreateTime   string
-	NewReplyTime string
+	CreateTime   time.Time `gorm:"default:null"`
+	NewReplyTime time.Time 
 	Reply        int
-	Liked        int
-	Collect      int
-	Sharing      int
+	Liked        int `gorm:"default:0"`
+	Collect      int `gorm:"default:0"`
+	Sharing      int `gorm:"default:0"`
 	URL          string
-	Content      string
+	Content      string `gorm:"default:null"`
 	Version      int
 }
 
@@ -36,7 +36,7 @@ type Page struct {
 }
 
 // GetTotal 获取总页数
-func GetTotal(url string, version int) int {
+func GetTotal(url string) int {
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
 		log.Fatal(err)
@@ -73,6 +73,31 @@ func Pages(url string, total int) (pages [][]Page) {
 	return pages
 }
 
+// PagesAll 获取全部的，包括漏页
+func PagesAll(url string, total int, version []int) (pages [][]Page) {
+	size := 25 //每页25条，每25页一组
+
+	lastKey := 0
+	var pageList []Page
+
+	for i, v := range version {
+		key := int(math.Floor(float64(i / size)))
+		if key != lastKey {
+			pages = append(pages, pageList)
+			pageList = append([]Page{})
+			lastKey = key
+		}
+		pageList = append(pageList, Page{
+			Page: total - v + 1,
+			URL:  url + "?start=" + strconv.Itoa((total-v)*size),
+		})
+	}
+
+	pages = append(pages, pageList)
+
+	return pages
+}
+
 // Topics 分析话题
 func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
 	doc.Find("#content > div > div.article > div > table.olt > tbody > tr").Each(func(i int, s *goquery.Selection) {
@@ -93,29 +118,25 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
 
 			reply, _ := strconv.Atoi(s.Find("td").Eq(2).Text())
 
-			newreplytime := s.Find("td").Eq(3).Text()
-			if strings.Count(newreplytime, "-") == 1 {
+			timestr := s.Find("td").Eq(3).Text()
+			if strings.Count(timestr, "-") == 1 {
 				year := strconv.Itoa(time.Now().Year())
-				newreplytime = strings.Join([]string{year, newreplytime}, "-")
+				timestr = strings.Join([]string{year, timestr}, "-")
 			}
+			newreplytime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
 
 			item := DoubanGroupDbhyz{
 				TopicID:      topicid,
 				Topic:        topic,
 				AuthorID:     authorid,
 				Author:       author,
-				CreateTime:   newreplytime,
 				NewReplyTime: newreplytime,
 				Reply:        reply,
-				Liked:        0,
-				Collect:      0,
-				Sharing:      0,
 				URL:          topicurl,
-				Content:      "",
 				Version:      version,
 			}
 
-			log.Printf("i: %d, item: %v", i, item)
+			//log.Printf("i: %d, item: %v", i, item)
 			items = append(items, item)
 		}
 	})
@@ -133,7 +154,9 @@ func Detail(item DoubanGroupDbhyz) DoubanGroupDbhyz {
 
 	topicContent := doc.Find("#content > div > div.article > div.topic-content")
 
-	createtime := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
+	timestr := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
+	createtime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
+
 	content := strings.TrimSpace(topicContent.Find("div.topic-doc > div#link-report > div.topic-content").Text())
 
 	// TODO 点赞、收藏、转发 需要登录才能获取
@@ -149,3 +172,4 @@ func Detail(item DoubanGroupDbhyz) DoubanGroupDbhyz {
 
 	return item
 }
+

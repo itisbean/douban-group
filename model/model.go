@@ -13,12 +13,12 @@ var (
 	DB *gorm.DB
 
 	username = "root"
-	//password = "dony123."
-	password = ""
+	password = "dony123."
+	//password = ""
 	dbName   = "spiders"
 
-	//host = "127.0.0.1"
-	host = "192.168.254.128"
+	host = "127.0.0.1"
+	//host = "192.168.254.128"
 	port = "3306"
 )
 
