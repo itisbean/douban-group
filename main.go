@@ -32,18 +32,22 @@ func Start1() {
 	var pages [][]parse.Page
 	pages = parse.PagesAll(BaseURL, newVersion, version)
 
-	for _, pageList := range pages {
-		//1、获取新的Ip和user-agent抓取页面；延时防封禁；
-		proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
-		if proxyAddr == "" {
-			log.Println("无法获取代理Ip，请稍后重试")
-			break
-		}
+	log.Printf("pages group:%d", len(pages))
 
-		//2、开始抓取每页话题
-		for _, page := range pageList {
-			wg.Add(1)
-			go func(page parse.Page) {
+	for _, pageList := range pages {
+		wg.Add(len(pageList))
+		go func(pageList []parse.Page) {
+
+			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
+			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
+			if proxyAddr == "" {
+				log.Println("无法获取代理Ip，请稍后重试")
+				return
+			}
+
+			var items []parse.DoubanGroupDbhyz
+			//2、开始抓取每页话题
+			for _, page := range pageList {
 				defer wg.Done()
 
 				resp := agent.GetHTML(page.URL, userAgent, proxyAddr)
@@ -67,14 +71,16 @@ func Start1() {
 				}
 
 				curVersion := newVersion - page.Page + 1
-				items := parse.Topics(doc, curVersion)
+				//items = append(items, parse.Topics(doc, curVersion)...)
+				items = parse.Topics(doc, curVersion)
 				log.Printf("items:%v", items)
 				model.Save(items)
-			}(page)
-		}
+			}
+		}(pageList)
 
 		time.Sleep(time.Second * 5)
 	}
+
 	wg.Wait()
 }
 

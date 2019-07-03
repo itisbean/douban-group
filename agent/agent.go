@@ -22,18 +22,18 @@ type ProxyIP struct {
 
 // GetHTML 获取html
 func GetHTML(baseURL string, userAgent string, proxyAddr string) *http.Response {
-	time.Sleep(time.Second * 2)
+	//time.Sleep(time.Second * 1)
 
 	proxy, _ := url.Parse(proxyAddr) // 解析代理IP
 
 	netTransport := &http.Transport{ //要管理代理、TLS配置、keep-alive、压缩和其他设置，可以创建一个Transport
 		Proxy:                 http.ProxyURL(proxy),
 		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: time.Second * 10, //超时设置
+		ResponseHeaderTimeout: time.Second * 60, //超时设置
 	}
 
 	client := &http.Client{ //要管理HTTP客户端的头域、重定向策略和其他设置，创建一个Client
-		Timeout:   time.Second * 10,
+		Timeout:   time.Second * 60,
 		Transport: netTransport,
 	}
 
@@ -135,10 +135,10 @@ func ProxyThorn(proxyAddr string) (ip string, status int, useragent string) {
 	netTransport := &http.Transport{
 		Proxy:                 http.ProxyURL(proxy),
 		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: time.Second * 5,
+		ResponseHeaderTimeout: time.Second * 60,
 	}
 	httpClient := &http.Client{
-		Timeout:   time.Second * 5,
+		Timeout:   time.Second * 60,
 		Transport: netTransport,
 	}
 
@@ -149,7 +149,7 @@ func ProxyThorn(proxyAddr string) (ip string, status int, useragent string) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		log.Println(err)
+		log.Printf("检测失败，http code: %d",res.StatusCode)
 		return
 	}
 

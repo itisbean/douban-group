@@ -19,7 +19,7 @@ type DoubanGroupDbhyz struct {
 	AuthorID     int
 	Author       string
 	CreateTime   time.Time `gorm:"default:null"`
-	NewReplyTime time.Time 
+	NewReplyTime string
 	Reply        int
 	Liked        int `gorm:"default:0"`
 	Collect      int `gorm:"default:0"`
@@ -123,14 +123,14 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
 				year := strconv.Itoa(time.Now().Year())
 				timestr = strings.Join([]string{year, timestr}, "-")
 			}
-			newreplytime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
+			//newreplytime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
 
 			item := DoubanGroupDbhyz{
 				TopicID:      topicid,
 				Topic:        topic,
 				AuthorID:     authorid,
 				Author:       author,
-				NewReplyTime: newreplytime,
+				NewReplyTime: timestr,
 				Reply:        reply,
 				URL:          topicurl,
 				Version:      version,
