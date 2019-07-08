@@ -1,3 +1,18 @@
+/*
+Navicat MySQL Data Transfer
+
+Source Database       : spiders
+
+Target Server Type    : MYSQL
+Target Server Version : 50639
+File Encoding         : 65001
+
+Date: 2019-07-08 21:08:00
+*/
+
+-- ----------------------------
+-- Table structure for sp_douban_group_dbhyz
+-- ----------------------------
 CREATE TABLE `sp_douban_group_dbhyz` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `topic_id` int(10) DEFAULT '0' COMMENT '标题ID',

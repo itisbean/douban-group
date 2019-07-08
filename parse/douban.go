@@ -19,7 +19,7 @@ type DoubanGroupDbhyz struct {
 	AuthorID     int
 	Author       string
 	CreateTime   time.Time `gorm:"default:null"`
-	NewReplyTime string
+	NewReplyTime string 
 	Reply        int
 	Liked        int `gorm:"default:0"`
 	Collect      int `gorm:"default:0"`
@@ -74,23 +74,20 @@ func Pages(url string, total int) (pages [][]Page) {
 }
 
 // PagesAll 获取全部的，包括漏页
-func PagesAll(url string, total int, version []int) (pages [][]Page) {
-	size := 25 //每页25条，每25页一组
+func PagesAll(url string, total int, version []int) (pages [][]int) {
+	size := 30 //每页25条，每25页一组
 
 	lastKey := 0
-	var pageList []Page
+	var pageList []int
 
 	for i, v := range version {
 		key := int(math.Floor(float64(i / size)))
 		if key != lastKey {
 			pages = append(pages, pageList)
-			pageList = append([]Page{})
+			pageList = append([]int{})
 			lastKey = key
 		}
-		pageList = append(pageList, Page{
-			Page: total - v + 1,
-			URL:  url + "?start=" + strconv.Itoa((total-v)*size),
-		})
+		pageList = append(pageList, v)
 	}
 
 	pages = append(pages, pageList)
@@ -99,9 +96,13 @@ func PagesAll(url string, total int, version []int) (pages [][]Page) {
 }
 
 // Topics 分析话题
-func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
+func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz, newVersion int) {
+	//当前总页数
+	totalstr, _ := doc.Find("#content > div > div.article > div.paginator > span.thispage").Attr("data-total-page")
+	newVersion, _ = strconv.Atoi(totalstr)
+
 	doc.Find("#content > div > div.article > div > table.olt > tbody > tr").Each(func(i int, s *goquery.Selection) {
-		if i > 0 {
+		if i > 0 { //i=0时是标题列
 			topicurl, _ := s.Find("td a").Eq(0).Attr("href")
 			topicstr := strings.Split(topicurl, "/topic/")[1]
 			topicstr = strings.Replace(topicstr, "/", "", -1)
@@ -123,6 +124,9 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
 				year := strconv.Itoa(time.Now().Year())
 				timestr = strings.Join([]string{year, timestr}, "-")
 			}
+			if strings.Count(timestr, ":") == 0 {
+				timestr = strings.Join([]string{timestr, "00:00:00"}, " ")
+			}
 			//newreplytime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
 
 			item := DoubanGroupDbhyz{
@@ -141,7 +145,7 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz) {
 		}
 	})
 
-	return items
+	return items, newVersion
 }
 
 // Detail 详情页

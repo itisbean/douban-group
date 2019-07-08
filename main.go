@@ -2,6 +2,7 @@
 package main
 
 import (
+	"strconv"
 	"go-crawler/douban-group/agent"
 	"log"
 	"sync"
@@ -18,25 +19,43 @@ import (
 // 抓取网站：豆瓣🔥小组
 var (
 	BaseURL = "https://www.douban.com/group/639264/discussion"
+	newVersion = 0
 
 	wg sync.WaitGroup
 )
 
+func curVersion() ([]int) {
+	try := 1
+	size := 300
+	// for i:=1;i<=size;i++ {
+	// 	v = append(v, ((try-1)*size+i))
+	// }
+	return model.GetVersion(size*(try-1), size*(try-1)+size)
+}
+
 // Start1 分页抓取帖子（ID、标题、作者、最后回复时间等）
 func Start1() {
 
-	newVersion := parse.GetTotal(BaseURL)
+	newVersion = parse.GetTotal(BaseURL)
 
-	version := model.GetVersion(newVersion)
-	
-	var pages [][]parse.Page
+	version := curVersion()
+
+	log.Printf("%v", version)
+	// return
+
+	if (len(version) == 0) {
+		return 
+	}
+
+	var pages [][]int
 	pages = parse.PagesAll(BaseURL, newVersion, version)
 
 	log.Printf("pages group:%d", len(pages))
 
 	for _, pageList := range pages {
-		wg.Add(len(pageList))
-		go func(pageList []parse.Page) {
+		wg.Add(1)
+		go func(pageList []int) {
+			defer wg.Done()
 
 			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
@@ -48,9 +67,11 @@ func Start1() {
 			var items []parse.DoubanGroupDbhyz
 			//2、开始抓取每页话题
 			for _, page := range pageList {
-				defer wg.Done()
+				
+				log.Printf("total:%d", newVersion)
+				curURL := BaseURL + "?start=" + strconv.Itoa((newVersion-page)*25)
 
-				resp := agent.GetHTML(page.URL, userAgent, proxyAddr)
+				resp := agent.GetHTML(curURL, userAgent, proxyAddr)
 				if resp == nil {
 					log.Println("Get Html Error,Please Retry")
 					return
@@ -70,10 +91,10 @@ func Start1() {
 					return
 				}
 
-				curVersion := newVersion - page.Page + 1
 				//items = append(items, parse.Topics(doc, curVersion)...)
-				items = parse.Topics(doc, curVersion)
+				items, newVersion = parse.Topics(doc, page)
 				log.Printf("items:%v", items)
+				log.Printf("new version:%d", newVersion)
 				model.Save(items)
 			}
 		}(pageList)

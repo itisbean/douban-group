@@ -17,8 +17,8 @@ func Add(topics []parse.DoubanGroupDbhyz) {
 	}
 }
 
-// GetVersion 获取上一次的页数
-func GetVersion(max int) (v []int) {
+// GetVersion 获取上一次的页数 （弃）
+func GetVersion(min int, max int) (v []int) {
 	var items []parse.DoubanGroupDbhyz
 	err := DB.Select("version").Order("version").Group("version").Find(&items).Error
 	if err != nil || err == gorm.ErrRecordNotFound {
@@ -26,7 +26,7 @@ func GetVersion(max int) (v []int) {
 		return
 	}
 
-	for i:=0;i<=max;i++ {
+	for i:=(min+1);i<=max;i++ {
 		flag := true
 		for _, item := range items {
 			if i == item.Version {
