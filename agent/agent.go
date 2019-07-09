@@ -29,11 +29,11 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) *http.Response 
 	netTransport := &http.Transport{ //要管理代理、TLS配置、keep-alive、压缩和其他设置，可以创建一个Transport
 		Proxy:                 http.ProxyURL(proxy),
 		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: time.Second * 60, //超时设置
+		ResponseHeaderTimeout: time.Second * 30, //超时设置
 	}
 
 	client := &http.Client{ //要管理HTTP客户端的头域、重定向策略和其他设置，创建一个Client
-		Timeout:   time.Second * 60,
+		Timeout:   time.Second * 30,
 		Transport: netTransport,
 	}
 
@@ -85,7 +85,7 @@ func GetProxy() (proxyurl string, useragent string) {
 	try := 0
 
 	for {
-		if try >= 10 {
+		if try >= 15 {
 			break
 		}
 		try++
@@ -135,10 +135,10 @@ func ProxyThorn(proxyAddr string) (ip string, status int, useragent string) {
 	netTransport := &http.Transport{
 		Proxy:                 http.ProxyURL(proxy),
 		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: time.Second * 60,
+		ResponseHeaderTimeout: time.Second * 30,
 	}
 	httpClient := &http.Client{
-		Timeout:   time.Second * 60,
+		Timeout:   time.Second * 30,
 		Transport: netTransport,
 	}
 

@@ -6,7 +6,7 @@ import (
 	"go-crawler/douban-group/agent"
 	"log"
 	"sync"
-	"time"
+	//"time"
 
 	//"strings"
 
@@ -24,38 +24,39 @@ var (
 	wg sync.WaitGroup
 )
 
-func curVersion() ([]int) {
+func curVersion() (v []int) {
 	try := 1
 	size := 300
 	// for i:=1;i<=size;i++ {
 	// 	v = append(v, ((try-1)*size+i))
 	// }
-	return model.GetVersion(size*(try-1), size*(try-1)+size)
+	v = model.GetVersion(size*(try-1), size*(try-1)+size)
+	return v
 }
 
 // Start1 分页抓取帖子（ID、标题、作者、最后回复时间等）
 func Start1() {
 
-	newVersion = parse.GetTotal(BaseURL)
-
 	version := curVersion()
 
 	log.Printf("%v", version)
-	// return
+	//return
 
 	if (len(version) == 0) {
 		return 
 	}
 
 	var pages [][]int
-	pages = parse.PagesAll(BaseURL, newVersion, version)
+	pages = parse.PagesAll(BaseURL, version)
 
+	//log.Printf("%v", pages)
 	log.Printf("pages group:%d", len(pages))
 
+	newVersion = parse.GetTotal(BaseURL)
+
 	for _, pageList := range pages {
-		wg.Add(1)
+		wg.Add(len(pageList))
 		go func(pageList []int) {
-			defer wg.Done()
 
 			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
@@ -65,8 +66,10 @@ func Start1() {
 			}
 
 			var items []parse.DoubanGroupDbhyz
+			
 			//2、开始抓取每页话题
 			for _, page := range pageList {
+				defer wg.Done()
 				
 				log.Printf("total:%d", newVersion)
 				curURL := BaseURL + "?start=" + strconv.Itoa((newVersion-page)*25)
@@ -74,32 +77,32 @@ func Start1() {
 				resp := agent.GetHTML(curURL, userAgent, proxyAddr)
 				if resp == nil {
 					log.Println("Get Html Error,Please Retry")
-					return
+					continue
 				}
 
 				log.Printf("http code:%d", resp.StatusCode)
 
 				if resp.StatusCode == 403 {
 					log.Println("403 Forbidden,Please Retry")
-					return
+					continue
 				}
 				doc, err := goquery.NewDocumentFromResponse(resp)
 				defer resp.Body.Close()
 
 				if err != nil {
 					log.Println(err)
-					return
+					continue
 				}
 
 				//items = append(items, parse.Topics(doc, curVersion)...)
 				items, newVersion = parse.Topics(doc, page)
-				log.Printf("items:%v", items)
+				log.Printf("ip:%s, items:%v", proxyAddr, items)
 				log.Printf("new version:%d", newVersion)
 				model.Save(items)
 			}
 		}(pageList)
 
-		time.Sleep(time.Second * 5)
+		//time.Sleep(time.Second * 5)
 	}
 
 	wg.Wait()

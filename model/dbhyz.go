@@ -34,6 +34,9 @@ func GetVersion(min int, max int) (v []int) {
 			}
 		}
 		if flag == true {
+			if (i-1) > 0 && (len(v) == 0 || (i-1) != v[len(v)-1]) {
+				v = append(v, (i-1))
+			}
 			v = append(v, i)
 		}
 	}

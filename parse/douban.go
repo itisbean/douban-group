@@ -74,7 +74,7 @@ func Pages(url string, total int) (pages [][]Page) {
 }
 
 // PagesAll 获取全部的，包括漏页
-func PagesAll(url string, total int, version []int) (pages [][]int) {
+func PagesAll(url string, version []int) (pages [][]int) {
 	size := 30 //每页25条，每25页一组
 
 	lastKey := 0
