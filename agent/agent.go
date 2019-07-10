@@ -21,7 +21,7 @@ type ProxyIP struct {
 }
 
 // GetHTML 获取html
-func GetHTML(baseURL string, userAgent string, proxyAddr string) *http.Response {
+func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response, error) {
 	//time.Sleep(time.Second * 1)
 
 	proxy, _ := url.Parse(proxyAddr) // 解析代理IP
@@ -51,7 +51,7 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) *http.Response 
 		log.Println("【GetHtml】错误信息2：", err)
 	}
 
-	return resp //返回网页响应
+	return resp, err //返回网页响应
 }
 
 // GetAgent 随机获取user-agent
@@ -154,7 +154,7 @@ func ProxyThorn(proxyAddr string) (ip string, status int, useragent string) {
 	}
 
 	useragent = GetAgent()
-	resp := GetHTML(httpURL1, useragent, proxyAddr)
+	resp, err := GetHTML(httpURL1, useragent, proxyAddr)
 	if resp == nil {
 		log.Printf("检测失败：douban test failed")
 		return

@@ -4,8 +4,9 @@ package main
 import (
 	"strconv"
 	"go-crawler/douban-group/agent"
-	"log"
+	//"log"
 	"sync"
+	"os"
 	//"time"
 
 	//"strings"
@@ -14,6 +15,8 @@ import (
 
 	"go-crawler/douban-group/model"
 	"go-crawler/douban-group/parse"
+
+	log "github.com/cihub/seelog"
 )
 
 // 抓取网站：豆瓣🔥小组
@@ -25,7 +28,7 @@ var (
 )
 
 func curVersion() (v []int) {
-	try := 1
+	try := 2
 	size := 300
 	// for i:=1;i<=size;i++ {
 	// 	v = append(v, ((try-1)*size+i))
@@ -39,7 +42,7 @@ func Start1() {
 
 	version := curVersion()
 
-	log.Printf("%v", version)
+	log.Debug(version)
 	//return
 
 	if (len(version) == 0) {
@@ -50,7 +53,7 @@ func Start1() {
 	pages = parse.PagesAll(BaseURL, version)
 
 	//log.Printf("%v", pages)
-	log.Printf("pages group:%d", len(pages))
+	log.Debug("pages group:", len(pages))
 
 	newVersion = parse.GetTotal(BaseURL)
 
@@ -61,45 +64,55 @@ func Start1() {
 			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
 			if proxyAddr == "" {
-				log.Println("无法获取代理Ip，请稍后重试")
+				log.Error("无法获取代理Ip，请稍后重试")
 				return
 			}
 
 			var items []parse.DoubanGroupDbhyz
-			
+			var failed []int
 			//2、开始抓取每页话题
 			for _, page := range pageList {
 				defer wg.Done()
 				
-				log.Printf("total:%d", newVersion)
+				log.Debug("total:", newVersion)
 				curURL := BaseURL + "?start=" + strconv.Itoa((newVersion-page)*25)
 
-				resp := agent.GetHTML(curURL, userAgent, proxyAddr)
+				resp, err := agent.GetHTML(curURL, userAgent, proxyAddr)
 				if resp == nil {
-					log.Println("Get Html Error,Please Retry")
+					failed = append(failed, page)
+					log.Error("Get请求页面失败，", err)
 					continue
 				}
 
-				log.Printf("http code:%d", resp.StatusCode)
+				log.Debug("http code:", resp.StatusCode)
 
 				if resp.StatusCode == 403 {
-					log.Println("403 Forbidden,Please Retry")
+					failed = append(failed, page)
+					log.Error("错误403 Forbidden,请更换Ip")
 					continue
 				}
 				doc, err := goquery.NewDocumentFromResponse(resp)
 				defer resp.Body.Close()
 
 				if err != nil {
-					log.Println(err)
+					failed = append(failed, page)
+					log.Critical(err)
 					continue
 				}
 
 				//items = append(items, parse.Topics(doc, curVersion)...)
 				items, newVersion = parse.Topics(doc, page)
-				log.Printf("ip:%s, items:%v", proxyAddr, items)
-				log.Printf("new version:%d", newVersion)
+				if len(items)==0 {
+					failed = append(failed, page)
+					log.Error("爬虫解析失败，内容返回为空")
+					continue
+				}
+				log.Debug("items:", items)
+				log.Debug("new version:", newVersion)
 				model.Save(items)
 			}
+
+			log.Info("failed:", failed)
 		}(pageList)
 
 		//time.Sleep(time.Second * 5)
@@ -117,7 +130,23 @@ func Start2() {
 	//3、循环抓取，每组更新一次ip和设置延时，保存数据
 }
 
+// SetLogger 初始化日志配置
+func SetLogger(fileName string) {
+	if _, err := os.Stat(fileName); err == nil {
+		logger, err := log.LoggerFromConfigAsFile(fileName)
+		if err != nil {
+			panic(err)
+		}
+
+		log.ReplaceLogger(logger)
+	} 
+	log.Info("log initialize finish.")
+} 
+
 func main() {
+	SetLogger("logConfig.xml")
+	defer log.Flush()
+
 	Start1()
 	//Start2()
 
