@@ -29,11 +29,11 @@ var (
 
 func curVersion() (v []int) {
 	try := 2
-	size := 300
-	// for i:=1;i<=size;i++ {
-	// 	v = append(v, ((try-1)*size+i))
-	// }
-	v = model.GetVersion(size*(try-1), size*(try-1)+size)
+	size := 900
+	// v = model.GetVersion(size*(try-1), size*(try-1)+size)
+	for i:=0;i<=size;i++ {
+		v = append(v, ((try-1)*size+i))
+	}
 	return v
 }
 
@@ -68,7 +68,7 @@ func Start1() {
 				return
 			}
 
-			var items []parse.DoubanGroupDbhyz
+			//var items []parse.DoubanGroupDbhyz
 			var failed []int
 			//2、开始抓取每页话题
 			for _, page := range pageList {
@@ -101,11 +101,14 @@ func Start1() {
 				}
 
 				//items = append(items, parse.Topics(doc, curVersion)...)
-				items, newVersion = parse.Topics(doc, page)
+				items, total := parse.Topics(doc, page)
 				if len(items)==0 {
 					failed = append(failed, page)
 					log.Error("爬虫解析失败，内容返回为空")
 					continue
+				}
+				if total > newVersion {
+					newVersion = total
 				}
 				log.Debug("items:", items)
 				log.Debug("new version:", newVersion)

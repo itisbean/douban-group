@@ -28,7 +28,6 @@ func GetVersion(min int, max int) (v []int) {
 		return
 	}
 
-	var mark []int
 	for i:=(min+1);i<=max;i++ {
 		flag := true
 		for _, item := range items {
@@ -38,14 +37,18 @@ func GetVersion(min int, max int) (v []int) {
 		}
 		if flag == true {
 			prev := i-1
-			if prev > 0 && (len(v) == 0 || prev != v[len(v)-1]) {
-				mark = append(mark, prev)
-				v = append(v, prev)
+			next := i+1
+			if len(v) == 0 || i != v[len(v)-1] {
+				if len(v) == 0 || (prev >0 && prev != v[len(v)-1]) {
+					v = append(v, prev)
+				}
+				v = append(v, i)
 			}
-			v = append(v, i)
+			if next <= max {
+				v = append(v, next)
+			}
 		}
 	}
-	log.Info("Mark Version:", mark)
 	
 	return v
 }
