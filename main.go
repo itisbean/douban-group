@@ -2,14 +2,11 @@
 package main
 
 import (
-	"strconv"
 	"go-crawler/douban-group/agent"
-	//"log"
-	"sync"
-	"os"
-	//"time"
+	"strconv"
 
-	//"strings"
+	"os"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -21,18 +18,18 @@ import (
 
 // 抓取网站：豆瓣🔥小组
 var (
-	BaseURL = "https://www.douban.com/group/639264/discussion"
+	BaseURL    = "https://www.douban.com/group/639264/discussion"
 	newVersion = 0
 
 	wg sync.WaitGroup
 )
 
 func curVersion() (v []int) {
-	try := 2
+	try := 3
 	size := 900
 	// v = model.GetVersion(size*(try-1), size*(try-1)+size)
-	for i:=0;i<=size;i++ {
-		v = append(v, ((try-1)*size+i))
+	for i := 0; i <= size; i++ {
+		v = append(v, ((try-1)*size + i))
 	}
 	return v
 }
@@ -45,14 +42,13 @@ func Start1() {
 	log.Debug(version)
 	//return
 
-	if (len(version) == 0) {
-		return 
+	if len(version) == 0 {
+		return
 	}
 
 	var pages [][]int
 	pages = parse.PagesAll(BaseURL, version)
 
-	//log.Printf("%v", pages)
 	log.Debug("pages group:", len(pages))
 
 	newVersion = parse.GetTotal(BaseURL)
@@ -64,7 +60,7 @@ func Start1() {
 			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
 			if proxyAddr == "" {
-				log.Error("无法获取代理Ip，请稍后重试")
+				log.Error("无可用代理Ip，请稍后重试")
 				return
 			}
 
@@ -73,7 +69,7 @@ func Start1() {
 			//2、开始抓取每页话题
 			for _, page := range pageList {
 				defer wg.Done()
-				
+
 				log.Debug("total:", newVersion)
 				curURL := BaseURL + "?start=" + strconv.Itoa((newVersion-page)*25)
 
@@ -100,9 +96,8 @@ func Start1() {
 					continue
 				}
 
-				//items = append(items, parse.Topics(doc, curVersion)...)
 				items, total := parse.Topics(doc, page)
-				if len(items)==0 {
+				if len(items) == 0 {
 					failed = append(failed, page)
 					log.Error("爬虫解析失败，内容返回为空")
 					continue
@@ -142,9 +137,9 @@ func SetLogger(fileName string) {
 		}
 
 		log.ReplaceLogger(logger)
-	} 
+	}
 	log.Info("log initialize finish.")
-} 
+}
 
 func main() {
 	SetLogger("logConfig.xml")
