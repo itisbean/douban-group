@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
+
 	browser "github.com/EDDYCJY/fake-useragent"
 	log "github.com/cihub/seelog"
 )
@@ -27,8 +29,8 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response
 
 	netTransport := &http.Transport{ //要管理代理、TLS配置、keep-alive、压缩和其他设置，可以创建一个Transport
 		Proxy:        http.ProxyURL(proxy),
-		MaxIdleConns: 200,
-		//MaxIdleConnsPerHost:   10,
+		MaxIdleConns: 300,
+		MaxIdleConnsPerHost:   300,
 		ResponseHeaderTimeout: time.Second * 30, //超时设置
 		DisableKeepAlives: true,
 	}
@@ -47,6 +49,9 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response
 		req.Header.Add("User-Agent", userAgent) //模拟浏览器User-Agent
 	}
 
+	req.Header.Add("Connection", "close")
+	req.Close = true
+
 	resp, err := client.Do(req) //Do方法发送请求，返回HTTP回复
 	if err != nil {
 		return nil, err
@@ -58,7 +63,7 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response
 // GetAgent 随机获取user-agent
 func GetAgent() string {
 	random := browser.Chrome()
-	log.Debugf("Random: %s", random)
+	//log.Debugf("Random: %s", random)
 	return random
 }
 
@@ -119,9 +124,10 @@ func ProxyThorn(proxyAddr string) (ip string, useragent string) {
 
 	netTransport := &http.Transport{
 		Proxy:        http.ProxyURL(proxy),
-		MaxIdleConns: 200,
-		//MaxIdleConnsPerHost:   10,
+		MaxIdleConns: 300,
+		MaxIdleConnsPerHost:   300,
 		ResponseHeaderTimeout: time.Second * 30,
+		DisableKeepAlives: true,
 	}
 	httpClient := &http.Client{
 		Timeout:   time.Second * 30,
@@ -145,9 +151,22 @@ func ProxyThorn(proxyAddr string) (ip string, useragent string) {
 		log.Debugf("检测失败：douban test failed,", err)
 		return "", ""
 	}
-	defer resp.Body.Close()
+	
 	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
 		log.Debugf("检测失败，http code:%d", resp.StatusCode)
+		return "", ""
+	}
+
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	defer resp.Body.Close()
+	if err != nil {
+		log.Debugf("检测失败，goquery读取doc失败：", err)
+		return "", ""
+	}
+	length := doc.Find("#content > div > div.article > div > table.olt > tbody > tr").Length()
+	if (length == 0) {
+		log.Debugf("检测失败，无法获取页面可用内容")
 		return "", ""
 	}
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"time"
 	"go-crawler/douban-group/agent"
 	"strconv"
 
@@ -25,12 +26,12 @@ var (
 )
 
 func curVersion() (v []int) {
-	try := 3
+	try := 9
 	size := 900
-	// v = model.GetVersion(size*(try-1), size*(try-1)+size)
-	for i := 0; i <= size; i++ {
-		v = append(v, ((try-1)*size + i))
-	}
+	v = model.GetVersion(size*(try-1), size*(try-1)+size)
+	// for i := 0; i <= size; i++ {
+	// 	v = append(v, ((try-1)*size + i))
+	// }
 	return v
 }
 
@@ -49,7 +50,7 @@ func Start1() {
 	var pages [][]int
 	pages = parse.PagesAll(BaseURL, version)
 
-	log.Debug("pages group:", len(pages))
+	log.Info("pages group:", len(pages))
 
 	newVersion = parse.GetTotal(BaseURL)
 
@@ -61,6 +62,8 @@ func Start1() {
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
 			if proxyAddr == "" {
 				log.Error("无可用代理Ip，请稍后重试")
+				log.Info("failed:", pageList)
+				defer wg.Add(-len(pageList))
 				return
 			}
 
@@ -142,11 +145,17 @@ func SetLogger(fileName string) {
 }
 
 func main() {
+	bT := time.Now()
+
 	SetLogger("logConfig.xml")
 	defer log.Flush()
 
 	Start1()
 	//Start2()
+
+	eT := time.Since(bT)
+
+	log.Info("run time:", eT)
 
 	defer model.DB.Close()
 }
