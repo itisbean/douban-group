@@ -36,6 +36,7 @@ func GetVersion(min int, max int) (v []int) {
 			}
 		}
 		if flag == true {
+			// v = append(v, i)
 			prev := i-1
 			next := i+1
 			if len(v) == 0 || i != v[len(v)-1] {
@@ -65,7 +66,12 @@ func Save(topics []parse.DoubanGroupDbhyz) {
 
 // Update 更新数据
 func Update(topic parse.DoubanGroupDbhyz) {
-	err := DB.Model(&topic).Updates(topic).Error
+	data := map[string]interface{}{
+		"create_time": topic.CreateTime,
+		"content": topic.Content,
+	}
+	
+	err := DB.Model(&topic).Updates(data).Error
 	if err != nil {
 		log.Critical("save err : %v", err)
 	}
@@ -73,7 +79,7 @@ func Update(topic parse.DoubanGroupDbhyz) {
 
 // GetNoContent 获取未更新详情页的贴子
 func GetNoContent() (topics []parse.DoubanGroupDbhyz) {
-	err := DB.Where("content IS NULL AND new_reply_time > '2019-01-01 00:00:00'").Find(&topics).Error
+	err := DB.Where("content IS NULL").Order("new_reply_time DESC").Limit(900).Find(&topics).Error
 	if err != nil {
 		log.Critical("get no content err : %v", err)
 	}
@@ -88,3 +94,4 @@ func GetOne(topicID int) (topic parse.DoubanGroupDbhyz) {
 	}
 	return
 }
+

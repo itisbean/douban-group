@@ -21,17 +21,20 @@ type ProxyIP struct {
 	Port int    `json:"port"`
 }
 
+var ipPool []string
+
 // GetHTML 获取html
 func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response, error) {
-	//time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 1)
 
 	proxy, _ := url.Parse(proxyAddr) // 解析代理IP
 
 	netTransport := &http.Transport{ //要管理代理、TLS配置、keep-alive、压缩和其他设置，可以创建一个Transport
 		Proxy:        http.ProxyURL(proxy),
-		MaxIdleConns: 300,
-		MaxIdleConnsPerHost:   300,
-		ResponseHeaderTimeout: time.Second * 30, //超时设置
+		MaxIdleConns: 0,
+		MaxIdleConnsPerHost:   0,
+		ResponseHeaderTimeout: time.Second * 15, //超时设置
+		IdleConnTimeout: 0,
 		DisableKeepAlives: true,
 	}
 
@@ -101,6 +104,7 @@ func GetProxy() (proxyurl string, useragent string) {
 		//判断是否有返回ip，并且请求状态为200
 		if ip != "" && useragent != "" {
 			log.Debugf(proxyip.IP + " 请求 http://icanhazip.com 返回ip:【" + ip + "】-【检测结果：可用】")
+			ipPool = append(ipPool, proxyip.IP)
 			break
 		} else {
 			proxyurl = ""
@@ -108,6 +112,7 @@ func GetProxy() (proxyurl string, useragent string) {
 		}
 	}
 
+	log.Info(ipPool)
 	return proxyurl, useragent
 }
 
@@ -117,20 +122,20 @@ func GetProxy() (proxyurl string, useragent string) {
 // 返回：ip 验证通过的ip、status 状态（200表示成功）
 func ProxyThorn(proxyAddr string) (ip string, useragent string) {
 	//访问查看ip的一个网址
-	httpURL1 := "https://www.douban.com/group/639264/discussion"
+	httpURL1 := "http://www.douban.com/group/639264/discussion"
 	httpURL2 := "http://icanhazip.com"
 
 	proxy, err := url.Parse(proxyAddr)
 
 	netTransport := &http.Transport{
 		Proxy:        http.ProxyURL(proxy),
-		MaxIdleConns: 300,
-		MaxIdleConnsPerHost:   300,
-		ResponseHeaderTimeout: time.Second * 30,
+		MaxIdleConns: 0,
+		MaxIdleConnsPerHost:   0,
+		ResponseHeaderTimeout: time.Second * 15,
 		DisableKeepAlives: true,
 	}
 	httpClient := &http.Client{
-		Timeout:   time.Second * 30,
+		Timeout:   time.Second * 15,
 		Transport: netTransport,
 	}
 

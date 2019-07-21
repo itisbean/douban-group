@@ -26,7 +26,7 @@ var (
 )
 
 func curVersion() (v []int) {
-	try := 9
+	try := 23
 	size := 900
 	v = model.GetVersion(size*(try-1), size*(try-1)+size)
 	// for i := 0; i <= size; i++ {
@@ -48,7 +48,7 @@ func Start1() {
 	}
 
 	var pages [][]int
-	pages = parse.PagesAll(BaseURL, version)
+	pages = parse.PagesAll(version)
 
 	log.Info("pages group:", len(pages))
 
@@ -72,6 +72,10 @@ func Start1() {
 			//2、开始抓取每页话题
 			for _, page := range pageList {
 				defer wg.Done()
+
+				if page > newVersion {
+					continue
+				}
 
 				log.Debug("total:", newVersion)
 				curURL := BaseURL + "?start=" + strconv.Itoa((newVersion-page)*25)
@@ -109,7 +113,7 @@ func Start1() {
 					newVersion = total
 				}
 				log.Debug("items:", items)
-				log.Debug("new version:", newVersion)
+				//log.Debug("new version:", newVersion)
 				model.Save(items)
 			}
 
@@ -124,11 +128,65 @@ func Start1() {
 
 // Start2 从数据库获取未抓内容的话题，进入详情页抓取内容
 func Start2() {
-	//1、获取当前version下的话题数据
+	//1、获取content为null的数据，最近回复时间倒序，每次900条
+	items := model.GetNoContent()
+	if len(items) == 0 {
+		log.Info("暂无需要更新的数据")
+		return
+	}
 
 	//2、按30条一组分割
+	groupItems := parse.ContentAll(items)
+	log.Info("items group:", len(groupItems))
 
-	//3、循环抓取，每组更新一次ip和设置延时，保存数据
+	//3、使用记录中的URL循环抓取，每组更新一次ip和设置延时，更新数据
+	for _, itemList := range groupItems {
+		wg.Add(len(itemList))
+		go func(itemList []parse.DoubanGroupDbhyz) {
+			//1、获取新的Ip和user-agent抓取页面；延时防封禁；
+			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
+			if proxyAddr == "" {
+				log.Error("无可用代理Ip，请稍后重试")
+				log.Info("failed:", itemList)
+				defer wg.Add(-len(itemList))
+				return
+			}
+
+			//2、开始抓取每页话题
+			for _, item := range itemList {
+				defer wg.Done()
+
+				curURL := item.URL
+
+				resp, err := agent.GetHTML(curURL, userAgent, proxyAddr)
+				if resp == nil {
+					log.Error("Get请求页面失败，", err)
+					continue
+				}
+
+				log.Debug("http code:", resp.StatusCode)
+
+				if resp.StatusCode == 403 {
+					log.Error("错误403 Forbidden,请更换Ip")
+					continue
+				}
+				doc, err := goquery.NewDocumentFromResponse(resp)
+				defer resp.Body.Close()
+
+				if err != nil {
+					log.Critical(err)
+					continue
+				}
+
+				item = parse.Detail(doc, item)
+				log.Debugf("time:%s,content:%s", item.CreateTime, item.Content)
+				model.Update(item)
+			}
+
+		}(itemList)
+	} 
+
+	wg.Wait()
 }
 
 // SetLogger 初始化日志配置
@@ -150,8 +208,8 @@ func main() {
 	SetLogger("logConfig.xml")
 	defer log.Flush()
 
-	Start1()
-	//Start2()
+	// Start1()
+	Start2()
 
 	eT := time.Since(bT)
 

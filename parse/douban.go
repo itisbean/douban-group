@@ -14,6 +14,7 @@ import (
 
 // DoubanGroupDbhyz 豆瓣小组
 type DoubanGroupDbhyz struct {
+	ID           uint `gorm:"primary_key"`     
 	TopicID      int
 	Topic        string
 	AuthorID     int
@@ -74,7 +75,7 @@ func Pages(url string, total int) (pages [][]Page) {
 }
 
 // PagesAll 获取全部的，包括漏页
-func PagesAll(url string, version []int) (pages [][]int) {
+func PagesAll(version []int) (pages [][]int) {
 	size := 30 //每页25条，每25页一组
 
 	lastKey := 0
@@ -93,6 +94,28 @@ func PagesAll(url string, version []int) (pages [][]int) {
 	pages = append(pages, pageList)
 
 	return pages
+}
+
+// ContentAll 分组
+func ContentAll(items []DoubanGroupDbhyz) (groupItems [][]DoubanGroupDbhyz) {
+	size := 30 //每30条一组
+
+	lastKey := 0
+	var itemList []DoubanGroupDbhyz
+
+	for i, v := range items {
+		key := int(math.Floor(float64(i / size)))
+		if key != lastKey {
+			groupItems = append(groupItems, itemList)
+			itemList = append([]DoubanGroupDbhyz{})
+			lastKey = key
+		}
+		itemList = append(itemList, v)
+	}
+
+	groupItems = append(groupItems, itemList)
+
+	return groupItems
 }
 
 // Topics 分析话题
@@ -149,13 +172,8 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz, newVe
 }
 
 // Detail 详情页
-func Detail(item DoubanGroupDbhyz) DoubanGroupDbhyz {
+func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 	//item.URL = "https://www.douban.com/group/topic/143489532/"
-	doc, err := goquery.NewDocument(item.URL)
-	if err != nil {
-		log.Println(err)
-	}
-
 	topicContent := doc.Find("#content > div > div.article > div.topic-content")
 
 	timestr := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
@@ -169,9 +187,6 @@ func Detail(item DoubanGroupDbhyz) DoubanGroupDbhyz {
 	// sharing, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.sharing > div > div > div > span > a > span.rec-num").Text())
 
 	item.CreateTime = createtime
-	// item.Liked = liked
-	// item.Collect = collect
-	// item.Sharing = sharing
 	item.Content = content
 
 	return item
