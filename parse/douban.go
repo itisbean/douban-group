@@ -190,12 +190,13 @@ func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 			images += "," + imgurl
 		}
 	})
-	if images != "" {
-		images = "[images]" + images
-	}
+
+	log.Printf("images:%s", images)
 
 	content := strings.TrimSpace(mainContent.Text())
-	content = images + ";" +content
+	if images != "" {
+		content = "[images]" + images + ";" +content
+	}
 
 	// TODO 点赞、收藏、转发 需要登录才能获取
 	// liked, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-react > a > span.react-num").Text())

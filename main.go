@@ -211,8 +211,8 @@ func main() {
 	SetLogger("logConfig.xml")
 	defer log.Flush()
 
-	Start1()
-	// Start2()
+	// Start1()
+	Start2()
 
 	eT := time.Since(bT)
 
