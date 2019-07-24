@@ -28,20 +28,25 @@ var (
 func curVersion() (v []int) {
 	try := 23
 	size := 900
-	v = model.GetVersion(size*(try-1), size*(try-1)+size)
-	// for i := 0; i <= size; i++ {
-	// 	v = append(v, ((try-1)*size + i))
-	// }
+	// v = model.GetVersion(size*(try-1), size*(try-1)+size)
+	for i := 0; i <= size; i++ {
+		v = append(v, ((try-1)*size + i))
+	}
 	return v
 }
 
 // Start1 分页抓取帖子（ID、标题、作者、最后回复时间等）
 func Start1() {
 
-	version := curVersion()
+	//version := curVersion()
 
-	log.Debug(version)
+	//log.Debug(version)
 	//return
+
+	newVersion = parse.GetTotal(BaseURL)
+	version := model.GetVersion(newVersion-100, newVersion)
+	
+	log.Info("pages num:", len(version))
 
 	if len(version) == 0 {
 		return
@@ -50,9 +55,7 @@ func Start1() {
 	var pages [][]int
 	pages = parse.PagesAll(version)
 
-	log.Info("pages group:", len(pages))
-
-	newVersion = parse.GetTotal(BaseURL)
+	//log.Info("pages group:", len(pages))
 
 	for _, pageList := range pages {
 		wg.Add(len(pageList))
@@ -208,8 +211,8 @@ func main() {
 	SetLogger("logConfig.xml")
 	defer log.Flush()
 
-	// Start1()
-	Start2()
+	Start1()
+	// Start2()
 
 	eT := time.Since(bT)
 

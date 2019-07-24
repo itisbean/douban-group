@@ -76,7 +76,7 @@ func Pages(url string, total int) (pages [][]Page) {
 
 // PagesAll 获取全部的，包括漏页
 func PagesAll(version []int) (pages [][]int) {
-	size := 30 //每页25条，每25页一组
+	size := 25 //每页25条，每25页一组
 
 	lastKey := 0
 	var pageList []int
@@ -179,7 +179,23 @@ func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 	timestr := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
 	createtime, _ := time.ParseInLocation("2006-01-02 15:04:05", timestr, time.Local)
 
-	content := strings.TrimSpace(topicContent.Find("div.topic-doc > div#link-report > div.topic-content").Text())
+	mainContent := topicContent.Find("div.topic-doc > div#link-report > div.topic-content")
+
+	images := ""
+	mainContent.Find("div.topic-richtext > div.image-container > div.image-wrapper").Each(func(i int, s *goquery.Selection) {
+		imgurl, _ := s.Find("img").Eq(0).Attr("src")
+		if i == 0 {
+			images = imgurl
+		} else {
+			images += "," + imgurl
+		}
+	})
+	if images != "" {
+		images = "[images]" + images
+	}
+
+	content := strings.TrimSpace(mainContent.Text())
+	content = images + ";" +content
 
 	// TODO 点赞、收藏、转发 需要登录才能获取
 	// liked, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-react > a > span.react-num").Text())
