@@ -33,7 +33,7 @@ func GetHTML(baseURL string, userAgent string, proxyAddr string) (*http.Response
 		Proxy:        http.ProxyURL(proxy),
 		MaxIdleConns: 0,
 		MaxIdleConnsPerHost:   0,
-		ResponseHeaderTimeout: time.Second * 15, //超时设置
+		ResponseHeaderTimeout: time.Second * 30, //超时设置
 		IdleConnTimeout: 0,
 		DisableKeepAlives: true,
 	}
@@ -141,37 +141,37 @@ func ProxyThorn(proxyAddr string) (ip string, useragent string) {
 
 	res, err := httpClient.Get(httpURL2)
 	if err != nil {
-		log.Debug("检测失败，错误信息：", err)
+		//log.Debug("检测失败，错误信息：", err)
 		return "", ""
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		log.Debugf("检测失败，http code: %d", res.StatusCode)
+		//log.Debugf("检测失败，http code: %d", res.StatusCode)
 		return "", ""
 	}
 
 	useragent = GetAgent()
 	resp, err := GetHTML(httpURL1, useragent, proxyAddr)
 	if err != nil {
-		log.Debugf("检测失败：douban test failed,", err)
+		//log.Debugf("检测失败：douban test failed,", err)
 		return "", ""
 	}
 	
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
-		log.Debugf("检测失败，http code:%d", resp.StatusCode)
+		//log.Debugf("检测失败，http code:%d", resp.StatusCode)
 		return "", ""
 	}
 
 	doc, err := goquery.NewDocumentFromResponse(resp)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Debugf("检测失败，goquery读取doc失败：", err)
+		//log.Debugf("检测失败，goquery读取doc失败：", err)
 		return "", ""
 	}
 	length := doc.Find("#content > div > div.article > div > table.olt > tbody > tr").Length()
 	if (length == 0) {
-		log.Debugf("检测失败，无法获取页面可用内容")
+		//log.Debugf("检测失败，无法获取页面可用内容")
 		return "", ""
 	}
 

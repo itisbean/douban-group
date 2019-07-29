@@ -44,7 +44,7 @@ func Start1() {
 	//return
 
 	newVersion = parse.GetTotal(BaseURL)
-	version := model.GetVersion(newVersion-100, newVersion)
+	version := model.GetVersion(newVersion-200, newVersion)
 	
 	log.Info("pages num:", len(version))
 
@@ -90,7 +90,7 @@ func Start1() {
 					continue
 				}
 
-				log.Debug("http code:", resp.StatusCode)
+				//log.Debug("http code:", resp.StatusCode)
 
 				if resp.StatusCode == 403 {
 					failed = append(failed, page)
@@ -150,7 +150,6 @@ func Start2() {
 			proxyAddr, userAgent := agent.GetProxy() //代理IP，需要自己更换
 			if proxyAddr == "" {
 				log.Error("无可用代理Ip，请稍后重试")
-				log.Info("failed:", itemList)
 				defer wg.Add(-len(itemList))
 				return
 			}
@@ -163,11 +162,9 @@ func Start2() {
 
 				resp, err := agent.GetHTML(curURL, userAgent, proxyAddr)
 				if resp == nil {
-					log.Error("Get请求页面失败，", err)
+					//log.Error("Get请求页面失败，", err)
 					continue
 				}
-
-				log.Debug("http code:", resp.StatusCode)
 
 				if resp.StatusCode == 403 {
 					log.Error("错误403 Forbidden,请更换Ip")
@@ -182,7 +179,7 @@ func Start2() {
 				}
 
 				item = parse.Detail(doc, item)
-				log.Debugf("time:%s,content:%s", item.CreateTime, item.Content)
+				log.Debugf("\nTime:%s\nTopic:%s\nContent:%s\nurl:%s\n", item.CreateTime,item.Topic,item.Content,item.URL)
 				model.Update(item)
 			}
 

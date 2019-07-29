@@ -66,9 +66,16 @@ func Save(topics []parse.DoubanGroupDbhyz) {
 
 // Update 更新数据
 func Update(topic parse.DoubanGroupDbhyz) {
-	data := map[string]interface{}{
-		"create_time": topic.CreateTime,
-		"content": topic.Content,
+	var data map[string]interface{}
+	if topic.IsDel == 1 {
+		data = map[string]interface{}{
+			"is_del": topic.IsDel,
+		}
+	} else {
+		data = map[string]interface{}{
+			"create_time": topic.CreateTime,
+			"content": topic.Content,
+		}
 	}
 	
 	err := DB.Model(&topic).Updates(data).Error
@@ -79,7 +86,7 @@ func Update(topic parse.DoubanGroupDbhyz) {
 
 // GetNoContent 获取未更新详情页的贴子
 func GetNoContent() (topics []parse.DoubanGroupDbhyz) {
-	err := DB.Where("content IS NULL").Order("new_reply_time DESC").Limit(900).Find(&topics).Error
+	err := DB.Where("content IS NULL AND is_del=0").Order("new_reply_time DESC").Limit(30000).Find(&topics).Error
 	if err != nil {
 		log.Critical("get no content err : %v", err)
 	}

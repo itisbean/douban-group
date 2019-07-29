@@ -33,3 +33,7 @@ CREATE TABLE `sp_douban_group_dbhyz` (
   INDEX `version`(`version`),
   INDEX `IX_new_time`(`new_reply_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT='豆瓣火研组';
+
+
+ALTER TABLE `spiders`.`sp_douban_group_dbhyz` 
+ADD COLUMN `is_del` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否删除' AFTER `version`;

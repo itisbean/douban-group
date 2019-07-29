@@ -28,6 +28,7 @@ type DoubanGroupDbhyz struct {
 	URL          string
 	Content      string `gorm:"default:null"`
 	Version      int
+	IsDel        int `gorm:"default:0"`
 }
 
 // Page 分页
@@ -174,6 +175,13 @@ func Topics(doc *goquery.Document, version int) (items []DoubanGroupDbhyz, newVe
 // Detail 详情页
 func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 	//item.URL = "https://www.douban.com/group/topic/143489532/"
+
+	delText := doc.Find("#wrapper > div > ul > li").Eq(0).Find("p").Text()
+	if delText == "呃...你想要的东西不在这儿" {
+		item.IsDel = 1;
+		return item
+	}
+
 	topicContent := doc.Find("#content > div > div.article > div.topic-content")
 
 	timestr := topicContent.Find("div.topic-doc > h3 > span.color-green").Text()
@@ -191,8 +199,6 @@ func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 		}
 	})
 
-	log.Printf("images:%s", images)
-
 	content := strings.TrimSpace(mainContent.Text())
 	if images != "" {
 		content = "[images]" + images + ";" +content
@@ -201,7 +207,7 @@ func Detail(doc *goquery.Document, item DoubanGroupDbhyz) DoubanGroupDbhyz {
 	// TODO 点赞、收藏、转发 需要登录才能获取
 	// liked, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-react > a > span.react-num").Text())
 	// collect, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.action-collect > a > span.react-num").Text())
-	// sharing, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.sharing > div > div > div > span > a > span.rec-num").Text())
+	// sharing, _ := strconv.Atoi(topicContent.Find("div.sns-bar > div.sharing > div > div > div > span > a > span.rec-num").Text())  
 
 	item.CreateTime = createtime
 	item.Content = content
